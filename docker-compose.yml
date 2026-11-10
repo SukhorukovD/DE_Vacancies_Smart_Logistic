@@ -1,13 +1,16 @@
 x-airflow-common: &airflow-common
   image: apache/airflow:3.1.7
   env_file:
-    - ./airflow.env
+    - path: ./airflow.env.example
+    - path: ./airflow.env
+      required: false
   user: "50000:0"
   volumes:
     - ./dags:/opt/airflow/dags
     - ./etl:/opt/airflow/etl
     - ./logs:/opt/airflow/logs
     - ./plugins:/opt/airflow/plugins
+    - airflow_state:/opt/airflow/state
 
 services:
   postgres:
@@ -19,7 +22,7 @@ services:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
     ports:
-      - "5432:5432"
+      - "127.0.0.1:5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./sql:/sql:ro
@@ -30,7 +33,7 @@ services:
       retries: 5
 
   clickhouse:
-    image: clickhouse/clickhouse-server:latest
+    image: clickhouse/clickhouse-server:26.10.3.7
     container_name: logistics-clickhouse
     restart: unless-stopped
     environment:
@@ -38,8 +41,8 @@ services:
       CLICKHOUSE_USER: default
       CLICKHOUSE_DEFAULT_ACCESS_MANAGEMENT: 1
     ports:
-      - "8123:8123"
-      - "9000:9000"
+      - "127.0.0.1:8123:8123"
+      - "127.0.0.1:9000:9000"
     volumes:
       - clickhouse_data:/var/lib/clickhouse
     ulimits:
@@ -47,19 +50,39 @@ services:
         soft: 262144
         hard: 262144
 
+  db-bootstrap:
+    image: postgres:17
+    restart: "no"
+    command: ["bash", "/bootstrap/bootstrap.sh"]
+    environment:
+      PGHOST: postgres
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      N_PRICES: ${N_PRICES:-300000}
+      AIRFLOW_LOG_DIR: /airflow-logs
+      AIRFLOW_STATE_DIR: /airflow-state
+    volumes:
+      - ./docker:/bootstrap:ro
+      - ./sql:/sql:ro
+      - ./logs:/airflow-logs
+      - airflow_state:/airflow-state
+    depends_on:
+      postgres:
+        condition: service_healthy
+
   airflow-init:
     <<: *airflow-common
     command: bash -c "airflow db migrate"
     restart: "no"
     depends_on:
-      postgres:
-        condition: service_healthy
+      db-bootstrap:
+        condition: service_completed_successfully
 
   airflow-api-server:
     <<: *airflow-common
     command: api-server
     ports:
-      - "8080:8080"
+      - "127.0.0.1:8080:8080"
     restart: unless-stopped
     depends_on:
       postgres:
@@ -90,3 +113,4 @@ services:
 volumes:
   postgres_data:
   clickhouse_data:
+  airflow_state:
