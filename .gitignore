@@ -1,0 +1,72 @@
+# Переменные окружения и секреты
+.env
+.env.*
+*.env
+!.env.example
+!*.env.example
+
+secrets/
+*.pem
+*.key
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+env/
+*.egg-info/
+build/
+dist/
+
+# Кэши и результаты локальных проверок
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+.coverage.*
+htmlcov/
+coverage.xml
+
+# Airflow
+/logs/
+/airflow_home/
+airflow.db
+airflow.db-*
+*.log
+airflow-webserver.pid
+webserver_config.py
+
+# Локальные каталоги данных контейнеров
+/postgres_data/
+/clickhouse_data/
+
+# Выгрузки и резервные копии данных
+/exports/
+/backups/
+/data/raw/
+/data/processed/
+*.dump
+*.backup
+
+# Артефакты моделей
+*.pkl
+*.pickle
+*.joblib
+*.onnx
+
+# Временные и резервные файлы
+*.tmp
+*.tmp_*
+*.bak
+*.orig
+*.rej
+*~
+/etl/core/raw_to_core.before_tasks.py
+
+# IDE и операционная система
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
